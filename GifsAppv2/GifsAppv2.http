@@ -1,0 +1,6 @@
+@GifsAppv2_HostAddress = http://localhost:5142
+
+GET {{GifsAppv2_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

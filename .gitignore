@@ -1,0 +1,11 @@
+# Build artifacts
+.vs/
+bin/
+obj/
+
+# Configuration files
+appsettings.json
+appsettings.Development.json
+
+# User-specific settings
+*.user
