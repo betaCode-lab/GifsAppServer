@@ -7,8 +7,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
+// Add services to the container.
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -18,7 +18,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
 {
     // We get the key from appsettings.json
-    string jwtKey = builder.Configuration["Jwt:Key"]!;
+    string jwtKey = builder.Configuration["GifsApp:JwtSecret"]!;
 
     // We'll create a symmetric key to validate tokens
     var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
@@ -29,6 +29,7 @@ builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
     {
         ValidateAudience = false,
         ValidateIssuer = false,
+        ValidateLifetime = true,
         IssuerSigningKey = signingKey,
     };
 });
@@ -39,6 +40,11 @@ builder.Services.AddDbContext<GifsContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
+
+builder.Services.AddCors(options => options.AddPolicy("FrontEnd", policy =>
+{
+    policy.WithOrigins("http://localhost:4200").AllowAnyMethod().AllowAnyHeader();
+}));
 
 var app = builder.Build();
 
@@ -51,8 +57,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("FrontEnd");
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
