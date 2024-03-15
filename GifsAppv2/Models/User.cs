@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GifsAppv2.Models
 {
@@ -18,5 +19,8 @@ namespace GifsAppv2.Models
         [Required(ErrorMessage = "Password is required.")]
         [MinLength(8, ErrorMessage = "Password must be 8 characters long.")]
         public string? Password { get; set; }
+
+        [NotMapped]
+        public string? ConfirmPassword { get; set; }
     }
 }

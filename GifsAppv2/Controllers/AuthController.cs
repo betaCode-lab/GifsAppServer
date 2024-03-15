@@ -54,9 +54,9 @@ namespace GifsAppv2.Controllers
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim("IdUser", user.IdUser.ToString()),
-                    new Claim("Username", user.Username!),
-                    new Claim("Email", user.Email!)
+                    new Claim("idUser", user.IdUser.ToString()),
+                    new Claim("username", user.Username!),
+                    new Claim("email", user.Email!)
                 }),
                 Expires = DateTime.UtcNow.AddHours(2),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(byteKey), SecurityAlgorithms.HmacSha256Signature)
