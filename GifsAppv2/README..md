@@ -10,9 +10,9 @@ https://dotnet.microsoft.com/en-us/download/dotnet/8.0
 
 ## Reeinstalación de paquetes
 Dentro de la carpeta del proyecto desde una cmd, digite
-'''
+```
 dotnet restore
-'''
+```
 Esto reeinstalará los paquetes necesarios "se toma en cuenta que ya tiene instalado dotnet".
 
 ## Generar un nuevo archivo appsettings.json
@@ -23,7 +23,7 @@ Esto reeinstalará los paquetes necesarios "se toma en cuenta que ya tiene instal
 Esto creará un archivo appsettings.json vacío en la raíz de tu proyecto. Ahora puedes agregar la configuración deseada en formato JSON.
 Ejemplo de estructura en appsettings.json:
 
-'''
+```
 {
   "Logging": {
     "LogLevel": {
@@ -36,13 +36,13 @@ Ejemplo de estructura en appsettings.json:
   }
 }
 
-'''
+```
 
 ## Añadir una cadena de conexión
 Este proyecto trabaja con una db local, así que en tu appsettings.json en la sección de "ConnectionStrings"
 haz las siguientes modificaciones:
 
-'''
+```
 {
   "ConnectionStrings": {
     "DefaultConnection": "Server=localhost;Database=GifsDbV2;Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=True;"
@@ -55,16 +55,16 @@ haz las siguientes modificaciones:
   },
   "AllowedHosts": "*"
 }
-'''
+```
 
 ## ¿Cómo creo mi base de datos?
 Para crear tu base de datos es sencillo. En tu visual studio, en las herramientas superiores, hax click
 en tools - NuGet Package Manager - Package Manager Console. Esto abrirá una consola de comandos.
 En la terminal digite el siguiente comando para recrear la base de datos.
 
-'''
+```
 Update-Database
-'''
+```
 
 ## Secretos
 Los secretos permitirán a la aplicación poder ejecutar peticiones seguras con tu llave secreta, en este caso
@@ -75,10 +75,10 @@ para los jwt que validan las peticiones http y la identidad del usuario.
 - Seleccione el archivo secrets.json
 
 A continuación debe agregar la siguiente configuración en los secretos:
-'''
+```
 "GifsApp": {
     "JwtSecret": "add-your-secret-key"
   }
-'''
+```
 
 Una vez tengas todo listo, podrás ejecutar este proyecto sin problemas.
