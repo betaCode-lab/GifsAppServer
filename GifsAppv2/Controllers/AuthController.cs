@@ -1,4 +1,7 @@
 ﻿using GifsAppv2.Models;
+using GifsAppv2.Services.Email;
+using GifsAppv2.Services.Token;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -28,43 +31,133 @@ namespace GifsAppv2.Controllers
         [Route("Login")]
         public async Task<ActionResult<string>> Login(Login credentials)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(ModelState);
-            }
-
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == credentials.Email);
-
-            if (user == null)
-            {
-                return BadRequest("This user not exists.");
-            }
-
-            if (!BCrypt.Net.BCrypt.Verify(credentials.Password, user.Password))
-            {
-                return BadRequest("Password incorrect.");
-            }
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtKey = _configuration["GifsApp:JwtSecret"];
-            var byteKey = Encoding.UTF8.GetBytes(jwtKey!);
-
-            // We created a token content description 
-            var tokenDescription = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[]
+                if (!ModelState.IsValid)
                 {
-                    new Claim("idUser", user.IdUser.ToString()),
-                    new Claim("username", user.Username!),
-                    new Claim("email", user.Email!)
-                }),
-                Expires = DateTime.UtcNow.AddHours(2),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(byteKey), SecurityAlgorithms.HmacSha256Signature)
-            };
+                    return BadRequest(ModelState);
+                }
 
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == credentials.Email);
 
-            var token = tokenHandler.CreateToken(tokenDescription);
-            return Ok(new { Token = tokenHandler.WriteToken(token) });
+                if (user == null)
+                {
+                    return BadRequest("This user not exists.");
+                }
+
+                if (!BCrypt.Net.BCrypt.Verify(credentials.Password, user.Password))
+                {
+                    return BadRequest("Password incorrect.");
+                }
+
+                string token = Token.CreateToken(_configuration, user);
+
+                return Ok(new { Token = token });
+            }
+            catch
+            {
+                throw new Exception("An error occurred, please try again later.");
+            }
+        }
+
+        [HttpGet]
+        [Route("AuthenticateAccount/{token}")]
+        public async Task<ActionResult> AuthenticateAccount(string token)
+        {
+            try
+            {
+                return Ok();
+            }
+            catch
+            {
+                throw new Exception("An error occurred while authenticating the account.");
+            }
+        }
+
+        [HttpPost]
+        [Route("SendPasswordResetEmail")]
+        public async Task<ActionResult> SendPasswordResetEmail(ChangePassword changePassword)
+        {
+            try
+            {
+                if(string.IsNullOrWhiteSpace(changePassword.Email))
+                {
+                    return BadRequest("Email is required.");
+                }
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == changePassword.Email);
+
+                if (user == null)
+                {
+                    return BadRequest("This user not exists.");
+                }
+
+                string token = Token.CreateToken(_configuration, user);
+
+                user.Token = token;
+                await _context.SaveChangesAsync();
+
+                EmailService.ResetPassword(_configuration, user.Email!, token).Wait();
+
+                return Ok();
+            }
+            catch
+            {
+                throw new Exception("An error occurred while verifying the account.");
+            }
+        }
+
+        [HttpPost]
+        [Route("ChangePassword")]
+        public async Task<ActionResult> ChangePassword(ChangePassword newPasswords)
+        {
+            try
+            {
+                // Validate null fields
+                if (string.IsNullOrWhiteSpace(newPasswords.Password) || string.IsNullOrWhiteSpace(newPasswords.ConfirmPassword))
+                {
+                    return BadRequest("The password is required.");
+                }
+
+                if (string.IsNullOrWhiteSpace(newPasswords.Token))
+                {
+                    return BadRequest("Token not provided.");
+                }
+
+                // Validate if the passwords match
+                if (newPasswords.Password != newPasswords.ConfirmPassword)
+                {
+                    return BadRequest("Passwords do not match.");
+                }
+
+                // Validate password length
+                if (newPasswords.Password.Length < 8)
+                {
+                    return BadRequest("The password must be at least 8 characters long.");
+                }
+
+                var password = BCrypt.Net.BCrypt.HashPassword(newPasswords.Password);
+
+                var user = await _context.Users.FirstOrDefaultAsync(x => x.Token == newPasswords.Token);
+
+                // Validate token
+                if (user == null)
+                {
+                    return BadRequest("Token not valid.");
+                }
+
+                user.Token = null;
+                user.Password = password;
+
+                await _context.SaveChangesAsync();
+
+                return Ok();
+            }
+            catch
+            {
+                throw new Exception("An error ocurred while changing password.");
+            }
+            
         }
 
         [HttpPost]
@@ -78,38 +171,9 @@ namespace GifsAppv2.Controllers
                     return BadRequest("Token not valid.");
                 }
 
-                // Decode token
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var jwtSecurityToken = tokenHandler.ReadJwtToken(token.Token);
-
-                string jwtKey = _configuration["GifsApp:JwtSecret"]!;
-                var key = Encoding.UTF8.GetBytes(jwtKey);
-
-                // Crear opciones de validación
-                var validationParameters = new TokenValidationParameters
+                if (!await Token.ValidateToken(_configuration, token.Token))
                 {
-                    ValidateAudience = false,
-                    ValidateIssuer = false,
-                    ValidateLifetime = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                };
-
-                // Validar el token
-                var jwtToken = await tokenHandler.ValidateTokenAsync(token.Token, validationParameters);
-
-                if (!jwtToken.IsValid)
-                {
-                    return Unauthorized("Token not valid.");
-                }
-
-                // Get claims from token
-                var expiration = jwtSecurityToken.Claims.First(c => c.Type == "exp").Value;
-                var expirationDateTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiration)).UtcDateTime;
-
-                if (expirationDateTime < DateTimeOffset.UtcNow)
-                {
-                    // Token expirado
-                    return Unauthorized("The Token has expired.");
+                    return BadRequest("Token not valid.");
                 }
 
                 return Ok();

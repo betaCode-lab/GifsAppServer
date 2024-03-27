@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GifsAppv2.Models
@@ -22,5 +23,9 @@ namespace GifsAppv2.Models
 
         [NotMapped]
         public string? ConfirmPassword { get; set; }
+
+        public string? Token { get; set; }
+
+        public bool Active { get; set; }
     }
 }

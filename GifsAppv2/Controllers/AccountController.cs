@@ -17,7 +17,7 @@ namespace GifsAppv2.Controllers
             _context = context;
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("GetUserById/{id}")]
         public async Task<ActionResult<UserDTO>> GetUserById(int id)
